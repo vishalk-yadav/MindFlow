@@ -12,13 +12,17 @@ import { WeeklyInsightsCard } from '../components/dashboard/WeeklyInsightsCard';
 import { MiniAssistantWidget } from '../components/dashboard/MiniAssistantWidget';
 import { HabitTrackerCard } from '../components/dashboard/HabitTrackerCard';
 import { DailyCheckInModal } from '../components/checkin/DailyCheckInModal';
-import { AlertCircle, ArrowRight, ShieldAlert, Sparkles } from 'lucide-react';
+import { DashboardSleepCard } from '../components/dashboard/DashboardSleepCard';
+import { SleepTimerWidget } from '../components/sleep/SleepTimerWidget';
+import { AiNudgeRecommendations } from '../components/dashboard/AiNudgeRecommendations';
+import { AlertCircle, ArrowRight, ShieldAlert, Sparkles, X } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 export const DashboardPage = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [checkInModalOpen, setCheckInModalOpen] = useState(false);
+  const [sleepTimerModalOpen, setSleepTimerModalOpen] = useState(false);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -93,42 +97,26 @@ export const DashboardPage = () => {
         </div>
       )}
 
-      {/* Top Active Nudge Alert (if any) */}
-      {data?.nudges && data.nudges.length > 0 && (
-        <div className="bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-800/60 rounded-2xl p-4 flex items-center justify-between gap-3 shadow-2xs">
-          <div className="flex items-center gap-2.5">
-            <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
-            <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-              <strong className="text-blue-900 dark:text-blue-300 font-bold mr-1">{data.nudges[0].title}:</strong>
-              {data.nudges[0].message}
-            </span>
-          </div>
-          {data.nudges[0].actionLink && (
-            <button
-              onClick={() => navigate(data.nudges[0].actionLink)}
-              className="shrink-0 flex items-center gap-1 text-xs font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline cursor-pointer"
-            >
-              <span>{data.nudges[0].actionLabel || 'View'}</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          )}
-        </div>
-      )}
+      {/* AI Smart Nudge Recommendations */}
+      <AiNudgeRecommendations
+        nudges={data?.nudges}
+        onNudgesUpdated={fetchDashboard}
+      />
 
-      {/* ROW 1: Burnout Risk + Overview + Take Break Banner */}
+      {/* ROW 1: Burnout Risk + Sleep & Recovery Timer + Overview Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-4">
           <BurnoutCard burnoutData={data?.burnoutRisk} />
         </div>
-        <div className="lg:col-span-5">
-          <OverviewStats overviewData={data?.overview} />
+        <div className="lg:col-span-4">
+          <DashboardSleepCard onSleepLogged={fetchDashboard} />
         </div>
-        <div className="lg:col-span-3">
-          <TakeBreakBanner />
+        <div className="lg:col-span-4">
+          <OverviewStats overviewData={data?.overview} />
         </div>
       </div>
 
-      {/* ROW 2: To-Do List + Burnout Trend + (Quick Actions & Games) */}
+      {/* ROW 2: To-Do List + Burnout Trend + (Quick Actions, Break & Games) */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-4">
           <DashboardTodoList
@@ -143,7 +131,9 @@ export const DashboardPage = () => {
           <QuickActions
             onOpenCheckIn={() => setCheckInModalOpen(true)}
             onOpenAddTask={() => navigate('/tasks')}
+            onOpenSleepTimer={() => setSleepTimerModalOpen(true)}
           />
+          <TakeBreakBanner />
           <WellbeingGamesCard />
         </div>
       </div>
@@ -173,6 +163,26 @@ export const DashboardPage = () => {
           onClose={() => setCheckInModalOpen(false)}
           onSuccess={fetchDashboard}
         />
+      )}
+
+      {/* Direct Sleep Timer Modal (from QuickActions or Recovery prompt) */}
+      {sleepTimerModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto animate-fade-in">
+          <div className="relative w-full max-w-4xl my-8">
+            <button
+              onClick={() => setSleepTimerModalOpen(false)}
+              className="absolute -top-3 -right-3 z-20 w-9 h-9 rounded-full bg-slate-800 border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700 flex items-center justify-center shadow-lg transition-all cursor-pointer"
+              title="Close Sleep Timer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <SleepTimerWidget
+              onSleepCompleted={() => {
+                fetchDashboard();
+              }}
+            />
+          </div>
+        </div>
       )}
     </div>
   );

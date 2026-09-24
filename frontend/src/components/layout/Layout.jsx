@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
@@ -11,6 +11,11 @@ export const Layout = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [checkInModalOpen, setCheckInModalOpen] = useState(false);
   const location = useLocation();
+
+  // Reset scroll to top on route change
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, [location.pathname]);
 
   const userName = user?.anonymousMode ? 'Anonymous' : (user?.name || 'Student');
 
@@ -49,8 +54,8 @@ export const Layout = () => {
         };
       case '/planner':
         return {
-          title: 'Smart Daily Study Planner',
-          subtitle: 'Burnout-aware study schedule balanced with mindful breaks.',
+          title: 'Event & Study Planner',
+          subtitle: 'Schedule events on your calendar, track daily study blocks, and get notified on that day.',
         };
       case '/analytics':
         return {

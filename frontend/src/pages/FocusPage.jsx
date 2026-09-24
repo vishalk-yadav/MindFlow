@@ -14,13 +14,15 @@ import {
   Lightbulb,
   X,
   History,
-  Clock
+  Clock,
+  Moon
 } from 'lucide-react';
 import { focusAPI } from '../services/api';
 import { useNotification } from '../context/NotificationContext';
 import { useTheme } from '../context/ThemeContext';
 import { useSearchParams } from 'react-router-dom';
 import confetti from '../utils/confetti';
+import { SleepTimerWidget } from '../components/sleep/SleepTimerWidget';
 
 const engineeringCategories = [
   { id: 'DSA', label: 'DSA Practice' },
@@ -36,7 +38,19 @@ export const FocusPage = () => {
   const { showToast } = useNotification();
   const [searchParams] = useSearchParams();
 
-  // Mode settings
+  // Mode & Tab settings
+  const [activeTab, setActiveTab] = useState(() => {
+    return searchParams.get('tab') === 'sleep' || searchParams.get('mode') === 'sleep' ? 'sleep' : 'focus';
+  });
+
+  useEffect(() => {
+    if (searchParams.get('tab') === 'sleep' || searchParams.get('mode') === 'sleep') {
+      setActiveTab('sleep');
+    } else if (searchParams.get('tab') === 'focus') {
+      setActiveTab('focus');
+    }
+  }, [searchParams]);
+
   const [mode, setMode] = useState('POMODORO'); // 'POMODORO' | 'DEEP_WORK' | 'CUSTOM'
   const [focusMinutes, setFocusMinutes] = useState(25);
   const [breakMinutes, setBreakMinutes] = useState(5);
@@ -214,9 +228,54 @@ export const FocusPage = () => {
   const strokeDashoffset = circumference - ((totalSeconds - timeLeft) / totalSeconds) * circumference;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pb-12">
-      {/* MAIN COLUMN: Timer & Settings & Benefits (8 cols) */}
-      <div className="lg:col-span-8 flex flex-col gap-6">
+    <div className="flex flex-col gap-6 pb-12">
+      {/* Top Navigation Tabs: Focus Mode vs Sleep & Recovery Timer */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-2.5 sm:p-3 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-soft">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setActiveTab('focus')}
+            className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-2xl font-bold text-xs transition-all cursor-pointer ${
+              activeTab === 'focus'
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            <Brain className="w-4 h-4" />
+            <span>🎯 Focus Sessions</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('sleep')}
+            className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-2xl font-bold text-xs transition-all cursor-pointer ${
+              activeTab === 'sleep'
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            <Moon className="w-4 h-4" />
+            <span>🌙 Sleep & Rest Timer</span>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-extrabold uppercase">
+              Burnout Analyzed
+            </span>
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2 px-2 text-xs text-slate-500 dark:text-slate-400">
+          <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+          <span className="text-[11px] font-medium">
+            {activeTab === 'sleep'
+              ? 'Sleep sessions feed directly into your Burnout Prediction Engine'
+              : 'Earn +25 wellbeing points per completed deep work interval'}
+          </span>
+        </div>
+      </div>
+
+      {activeTab === 'sleep' ? (
+        <SleepTimerWidget onSleepCompleted={fetchStats} />
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* MAIN COLUMN: Timer & Settings & Benefits (8 cols) */}
+          <div className="lg:col-span-8 flex flex-col gap-6">
         {/* Main Focus Card */}
         <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-100 dark:border-slate-800 shadow-soft">
           {/* Header */}
@@ -660,6 +719,8 @@ export const FocusPage = () => {
           </div>
         </div>
       </div>
+    </div>
+  )}
 
       {/* All Focus Sessions History Modal */}
       {showAllSessionsModal && (

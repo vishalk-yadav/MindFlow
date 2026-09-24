@@ -20,6 +20,7 @@ import { aiAPI, plannerAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { AIMarkdownMessage } from '../components/ai/AIMarkdownMessage';
 
 const quickPromptPills = [
   'Plan my day',
@@ -48,6 +49,7 @@ export const AIAssistantPage = () => {
   const [status, setStatus] = useState(null);
   const [isRecording, setIsRecording] = useState(false);
   const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
   const fileInputRef = useRef(null);
 
   const handleFileAttach = (e) => {
@@ -128,6 +130,7 @@ export const AIAssistantPage = () => {
   useEffect(() => {
     fetchHistory();
     fetchStatus();
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   }, []);
 
   // Handle initial prompt passed in URL e.g. /ai?initial=Why%20am%20I%20stressed
@@ -138,8 +141,14 @@ export const AIAssistantPage = () => {
     }
   }, [searchParams]);
 
+  // Scroll only the internal messages container, never the window
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTo({
+        top: messagesContainerRef.current.scrollHeight,
+        behavior: 'smooth',
+      });
+    }
   }, [messages]);
 
   const handleClearChat = async () => {
@@ -255,7 +264,7 @@ export const AIAssistantPage = () => {
         </div>
 
         {/* Messages Stream */}
-        <div className="flex-1 p-6 overflow-y-auto space-y-5">
+        <div ref={messagesContainerRef} className="flex-1 p-6 overflow-y-auto space-y-5">
           {messages.map((msg, idx) => {
             const isUser = msg.sender === 'USER';
             const structured = msg.structuredData;
@@ -278,7 +287,11 @@ export const AIAssistantPage = () => {
                       : 'bg-slate-50/80 dark:bg-slate-800/80 border border-slate-100 dark:border-slate-700/60 text-slate-800 dark:text-slate-100 rounded-tl-xs shadow-2xs'
                   }`}
                 >
-                  <p className="whitespace-pre-wrap">{msg.content}</p>
+                  {isUser ? (
+                    <p className="whitespace-pre-wrap">{msg.content}</p>
+                  ) : (
+                    <AIMarkdownMessage content={msg.content} />
+                  )}
 
                   {/* Structured Plan Card if present */}
                   {structured && (

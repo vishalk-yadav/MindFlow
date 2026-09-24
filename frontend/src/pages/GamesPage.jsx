@@ -14,12 +14,16 @@ import {
   Brain,
   Heart,
   Cpu,
-  Zap
+  Zap,
+  BookOpen,
+  Grid3x3
 } from 'lucide-react';
 import { gameAPI } from '../services/api';
 import { useNotification } from '../context/NotificationContext';
 import { useSearchParams } from 'react-router-dom';
 import confetti from '../utils/confetti';
+import { WordMatchGame } from '../components/games/WordMatchGame';
+import { TicTacToeGame } from '../components/games/TicTacToeGame';
 
 export const GamesPage = () => {
   const [searchParams] = useSearchParams();
@@ -50,10 +54,10 @@ export const GamesPage = () => {
   return (
     <div className="flex flex-col gap-6 pb-12">
       {/* Game Selector Tabs */}
-      <div className="flex items-center gap-3 bg-white dark:bg-slate-900 p-2 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xs max-w-md">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3 bg-white dark:bg-slate-900 p-2 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xs max-w-xl">
         <button
           onClick={() => setActiveGame('bubbles')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
             activeGame === 'bubbles'
               ? 'bg-blue-600 text-white shadow-xs'
               : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
@@ -65,7 +69,7 @@ export const GamesPage = () => {
 
         <button
           onClick={() => setActiveGame('memory')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
             activeGame === 'memory'
               ? 'bg-purple-600 text-white shadow-xs'
               : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
@@ -76,8 +80,32 @@ export const GamesPage = () => {
         </button>
 
         <button
+          onClick={() => setActiveGame('wordmatch')}
+          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+            activeGame === 'wordmatch'
+              ? 'bg-indigo-600 text-white shadow-xs'
+              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+          }`}
+        >
+          <BookOpen className="w-4 h-4" />
+          <span>Word Match</span>
+        </button>
+
+        <button
+          onClick={() => setActiveGame('tictactoe')}
+          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+            activeGame === 'tictactoe'
+              ? 'bg-purple-600 text-white shadow-xs'
+              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+          }`}
+        >
+          <Grid3x3 className="w-4 h-4" />
+          <span>Tic-Tac-Toe</span>
+        </button>
+
+        <button
           onClick={() => setActiveGame('breathing')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
             activeGame === 'breathing'
               ? 'bg-emerald-600 text-white shadow-xs'
               : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
@@ -92,6 +120,8 @@ export const GamesPage = () => {
       <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-100 dark:border-slate-800 shadow-soft">
         {activeGame === 'bubbles' && <StressBubblesGame onFinish={fetchStats} />}
         {activeGame === 'memory' && <MemoryMatchGame onFinish={fetchStats} />}
+        {activeGame === 'wordmatch' && <WordMatchGame onFinish={fetchStats} />}
+        {activeGame === 'tictactoe' && <TicTacToeGame onFinish={fetchStats} />}
         {activeGame === 'breathing' && <BreathingGame onFinish={fetchStats} />}
       </div>
     </div>

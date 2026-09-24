@@ -14,9 +14,11 @@ import {
 import { plannerAPI, examAPI } from '../services/api';
 import { useNotification } from '../context/NotificationContext';
 import confetti from '../utils/confetti';
+import { EventCalendar } from '../components/planner/EventCalendar';
 
 export const PlannerPage = () => {
   const { showToast } = useNotification();
+  const [activeTab, setActiveTab] = useState('calendar'); // 'calendar' | 'schedule'
   const [plan, setPlan] = useState(null);
   const [exams, setExams] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -80,12 +82,45 @@ export const PlannerPage = () => {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pb-12">
-      {/* LEFT COLUMN: Study Timeline Schedule (8 cols) */}
-      <div className="lg:col-span-8 flex flex-col gap-6">
-        <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-100 dark:border-slate-800 shadow-soft">
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-100 dark:border-slate-800">
+    <div className="flex flex-col gap-6 pb-12">
+      {/* Top Planner Navigation Tabs */}
+      <div className="flex items-center gap-2 p-1.5 bg-slate-100 dark:bg-slate-800/80 rounded-2xl w-fit border border-slate-200/60 dark:border-slate-700/60">
+        <button
+          onClick={() => setActiveTab('calendar')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === 'calendar'
+              ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+          }`}
+        >
+          <CalendarDays className="w-4 h-4" />
+          <span>Event Calendar & Planner</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('schedule')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === 'schedule'
+              ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+          }`}
+        >
+          <Sparkles className="w-4 h-4" />
+          <span>Daily Study Blocks & Timeline</span>
+        </button>
+      </div>
+
+      {/* VIEW 1: Event Calendar */}
+      {activeTab === 'calendar' && <EventCalendar />}
+
+      {/* VIEW 2: Study Timeline Schedule & Exam Mode */}
+      {activeTab === 'schedule' && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* LEFT COLUMN: Study Timeline Schedule (8 cols) */}
+          <div className="lg:col-span-8 flex flex-col gap-6">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-100 dark:border-slate-800 shadow-soft">
+              {/* Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-100 dark:border-slate-800">
             <div>
               <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
                 <span>Smart Daily Study Planner</span>
@@ -276,5 +311,7 @@ export const PlannerPage = () => {
         </div>
       </div>
     </div>
-  );
+  )}
+</div>
+);
 };

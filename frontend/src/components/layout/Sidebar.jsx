@@ -22,7 +22,7 @@ const navItems = [
   { name: 'Focus Timer', path: '/focus', icon: Timer },
   { name: 'Wellbeing Games', path: '/games', icon: Gamepad2 },
   { name: 'Mood Check-in', path: '/checkin', icon: Smile },
-  { name: 'Study Planner', path: '/planner', icon: CalendarDays },
+  { name: 'Event Planner', path: '/planner', icon: CalendarDays },
   { name: 'Analytics', path: '/analytics', icon: BarChart3 },
   { name: 'AI Assistant', path: '/ai', icon: Bot },
   { name: 'Settings', path: '/settings', icon: Settings },
@@ -102,7 +102,7 @@ export const Sidebar = ({ mobileOpen, setMobileOpen }) => {
             </p>
             <div className="mt-3 flex items-center justify-between text-emerald-600 dark:text-emerald-400">
               <Heart className="w-4 h-4 fill-emerald-100 dark:fill-emerald-950/60 text-emerald-500" />
-              <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">Mindful</span>
+              <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">MindFlow</span>
             </div>
           </div>
           {/* Decorative botanical leaf illustration */}

@@ -61,11 +61,21 @@ export const focusAPI = {
   completeSession: (id, data) => API.post(`/focus/complete/${id || 'quick'}`, data),
   getStats: () => API.get('/focus/stats'),
   getHistory: (params) => API.get('/focus/history', { params }),
+  logSleep: (data) => API.post('/focus/sleep', data),
+  getSleepStats: () => API.get('/focus/sleep/stats'),
 };
 
 export const plannerAPI = {
   generatePlan: (data) => API.post('/planner/generate', data),
   getPlan: () => API.get('/planner'),
+};
+
+export const eventAPI = {
+  getEvents: (params) => API.get('/events', { params }),
+  getTodayEvents: () => API.get('/events/today'),
+  createEvent: (data) => API.post('/events', data),
+  updateEvent: (id, data) => API.put(`/events/${id}`, data),
+  deleteEvent: (id) => API.delete(`/events/${id}`),
 };
 
 export const examAPI = {
@@ -124,6 +134,13 @@ export const adminAPI = {
   createFaculty: (data) => API.post('/admin/faculty', data),
   updateFaculty: (id, data) => API.patch(`/admin/faculty/${id}`, data),
   getAuditLogs: (params) => API.get('/admin/audit-logs', { params }),
+};
+
+export const nudgeAPI = {
+  getNudges: () => API.get('/nudges'),
+  generateRecommendations: () => API.post('/nudges/recommend'),
+  dismissNudge: (id) => API.patch(`/nudges/${id}/dismiss`),
+  dismissAll: () => API.patch('/nudges/dismiss-all'),
 };
 
 export default API;
