@@ -93,6 +93,8 @@ model User {
   nudges           Nudge[]
   achievements     UserAchievement[]
   plannerSessions  PlannerSession[]
+  plannerEvents    PlannerEvent[]
+  sleepSessions    SleepSession[]
 
   // Faculty & Alert relations
   studentAlerts    BurnoutAlert[]    @relation("StudentAlerts")
@@ -203,6 +205,24 @@ model FocusSession {
   @@index([userId, startedAt])
 }
 
+model SleepSession {
+  id               String            @id @default(uuid())
+  userId           String
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  durationMinutes  Int
+  sleepType        String            @default("NAP") // NAP, CYCLE, OVERNIGHT, CUSTOM
+  qualityRating    Int?              @default(4)     // 1 to 5
+  notes            String?
+  burnoutBefore    Int?
+  burnoutAfter     Int?
+  completed        Boolean           @default(true)
+  startedAt        DateTime          @default(now())
+  endedAt          DateTime?
+  createdAt        DateTime          @default(now())
+
+  @@index([userId, createdAt])
+}
+
 model Habit {
   id               String            @id @default(uuid())
   userId           String
@@ -290,6 +310,26 @@ model PlannerSession {
   scheduleJson     Json              // Array of time slot items
   burnoutAdapted   Boolean           @default(false)
   createdAt        DateTime          @default(now())
+}
+
+model PlannerEvent {
+  id               String            @id @default(uuid())
+  userId           String
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title            String
+  description      String?
+  date             DateTime          // The day of the event
+  startTime        String?           // e.g. "10:00 AM" or "10:00"
+  endTime          String?           // e.g. "11:30 AM" or "11:30"
+  category         String            @default("ACADEMIC") // ACADEMIC, EXAM, ASSIGNMENT, WORKSHOP, HACKATHON, MEETING, PERSONAL
+  color            String            @default("blue")     // blue, purple, emerald, amber, rose, indigo
+  isAllDay         Boolean           @default(false)
+  notify           Boolean           @default(true)
+  reminderSent     Boolean           @default(false)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@index([userId, date])
 }
 
 model AIConversation {

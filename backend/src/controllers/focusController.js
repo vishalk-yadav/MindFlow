@@ -1,4 +1,5 @@
 const prisma = require('../config/db');
+const { calculateBurnoutRisk } = require('../services/burnoutService');
 
 const startFocusSession = async (req, res) => {
   try {
@@ -230,4 +231,175 @@ const getAllFocusSessions = async (req, res) => {
   }
 };
 
-module.exports = { startFocusSession, completeFocusSession, getFocusStats, getAllFocusSessions };
+/**
+ * POST /api/focus/sleep
+ * Logs a completed sleep/nap session, updates daily check-in telemetry,
+ * and immediately recalculates the burnout risk score.
+ */
+const logSleepSession = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { durationMinutes, sleepType = 'NAP', qualityRating = 4, notes } = req.body;
+
+    const mins = Math.max(parseInt(durationMinutes, 10) || 20, 1);
+    const hoursSlept = Number((mins / 60).toFixed(2));
+
+    // 1. Get current burnout score before this sleep session
+    const lastBurnout = await prisma.burnoutScore.findFirst({
+      where: { userId },
+      orderBy: { calculatedAt: 'desc' },
+    });
+    const burnoutBefore = lastBurnout ? lastBurnout.score : 60;
+
+    // 2. Update or create today's check-in
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+    const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+    let todayCheckIn = await prisma.dailyCheckIn.findFirst({
+      where: {
+        userId,
+        date: { gte: startOfDay, lte: endOfDay },
+      },
+      orderBy: { date: 'desc' },
+    });
+
+    let newTotalSleep = hoursSlept;
+    if (todayCheckIn) {
+      newTotalSleep = Number((todayCheckIn.sleepHours + hoursSlept).toFixed(1));
+      await prisma.dailyCheckIn.update({
+        where: { id: todayCheckIn.id },
+        data: {
+          sleepHours: Math.min(newTotalSleep, 24),
+        },
+      });
+    } else {
+      todayCheckIn = await prisma.dailyCheckIn.create({
+        data: {
+          userId,
+          mood: 'GOOD',
+          stressLevel: 4,
+          energyLevel: 7,
+          sleepHours: Math.min(hoursSlept, 24),
+          studyHours: 0,
+          breaksCount: 1,
+          mainWorkload: 'PERSONAL',
+          notes: `Sleep Timer: ${sleepType} (${mins}m)`,
+        },
+      });
+    }
+
+    // 3. Recalculate Burnout Risk based on new sleep telemetry
+    const updatedBurnout = await calculateBurnoutRisk(userId);
+    const burnoutAfter = updatedBurnout.score;
+    const scoreReduction = Math.max(burnoutBefore - burnoutAfter, 0);
+
+    // 4. Record SleepSession
+    const session = await prisma.sleepSession.create({
+      data: {
+        userId,
+        durationMinutes: mins,
+        sleepType,
+        qualityRating: parseInt(qualityRating, 10) || 4,
+        notes: notes || null,
+        burnoutBefore,
+        burnoutAfter,
+        completed: true,
+        endedAt: new Date(),
+      },
+    });
+
+    res.status(201).json({
+      success: true,
+      session,
+      loggedMinutes: mins,
+      loggedHours: hoursSlept,
+      totalSleepToday: newTotalSleep,
+      burnout: {
+        score: updatedBurnout.score,
+        riskLevel: updatedBurnout.riskLevel,
+        factors: {
+          workload: updatedBurnout.workloadFactor,
+          sleep: updatedBurnout.sleepFactor,
+          stress: updatedBurnout.stressFactor,
+          breaks: updatedBurnout.breaksFactor,
+        },
+        explanation: updatedBurnout.explanation,
+        positiveFactors: updatedBurnout.positiveFactors,
+        negativeFactors: updatedBurnout.negativeFactors,
+        previousScore: burnoutBefore,
+        scoreReduction,
+      },
+      message: `Sleep session recorded (${mins}m)! Burnout risk score improved from ${burnoutBefore} to ${burnoutAfter}.`,
+    });
+  } catch (error) {
+    console.error('Error logging sleep session:', error);
+    res.status(500).json({ error: 'Failed to record sleep session.' });
+  }
+};
+
+/**
+ * GET /api/focus/sleep/stats
+ * Retrieves sleep telemetry, history, and target comparison.
+ */
+const getSleepStats = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+    const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+    // User profile for target sleep
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { profile: true },
+    });
+    const targetSleep = user?.profile?.targetSleepHours || 7.5;
+
+    // Today's sleep check-in
+    const todayCheckIn = await prisma.dailyCheckIn.findFirst({
+      where: {
+        userId,
+        date: { gte: startOfDay, lte: endOfDay },
+      },
+    });
+    const todaySleepHours = todayCheckIn?.sleepHours || 0;
+
+    // Recent sleep sessions
+    const recentSessions = await prisma.sleepSession.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take: 10,
+    });
+
+    // Current burnout score
+    const burnout = await prisma.burnoutScore.findFirst({
+      where: { userId },
+      orderBy: { calculatedAt: 'desc' },
+    });
+
+    const sleepDeficit = Math.max(0, Number((targetSleep - todaySleepHours).toFixed(1)));
+
+    res.json({
+      todaySleepHours,
+      targetSleepHours: targetSleep,
+      sleepDeficit,
+      meetsTarget: todaySleepHours >= targetSleep,
+      recentSessions,
+      burnoutScore: burnout?.score || 50,
+      riskLevel: burnout?.riskLevel || 'MODERATE',
+    });
+  } catch (error) {
+    console.error('Error fetching sleep stats:', error);
+    res.status(500).json({ error: 'Failed to fetch sleep statistics.' });
+  }
+};
+
+module.exports = {
+  startFocusSession,
+  completeFocusSession,
+  getFocusStats,
+  getAllFocusSessions,
+  logSleepSession,
+  getSleepStats,
+};

@@ -1,8 +1,13 @@
 const prisma = require('../config/db');
+const { checkAndSendTodayReminders } = require('./eventController');
 
 const getNotifications = async (req, res) => {
   try {
     const userId = req.user.id;
+
+    // Check today's event reminders
+    await checkAndSendTodayReminders(userId);
+
     let notifications = await prisma.notification.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },

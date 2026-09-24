@@ -17,6 +17,8 @@ const analyticsRoutes = require('./routes/analyticsRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const facultyRoutes = require('./routes/facultyRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const eventRoutes = require('./routes/eventRoutes');
+const nudgeRoutes = require('./routes/nudgeRoutes');
 
 const app = express();
 
@@ -73,6 +75,8 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/faculty', facultyRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/events', eventRoutes);
+app.use('/api/nudges', nudgeRoutes);
 
 // Centralized error handler
 app.use((err, req, res, next) => {
