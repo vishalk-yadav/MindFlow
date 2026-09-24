@@ -86,11 +86,16 @@ export const AuthProvider = ({ children }) => {
   const toggleAnonymousMode = async () => {
     try {
       const res = await privacyAPI.toggleAnonymous();
-      setUser((prev) => ({
-        ...prev,
-        anonymousMode: res.data.anonymousMode,
-        name: res.data.displayName,
-      }));
+      setUser((prev) => {
+        const next = {
+          ...prev,
+          anonymousMode: res.data.anonymousMode,
+          name: res.data.displayName,
+          email: res.data.displayEmail || (res.data.anonymousMode ? 'hidden@mindflow.local' : prev?.email),
+        };
+        localStorage.setItem('mindflow_user', JSON.stringify(next));
+        return next;
+      });
       return res.data;
     } catch (err) {
       console.error('Failed to toggle anonymous mode:', err);

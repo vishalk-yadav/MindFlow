@@ -181,8 +181,12 @@ export const Topbar = ({ onMenuClick, title, subtitle }) => {
           {profileDropdownOpen && (
             <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-800 p-2 z-50">
               <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800 mb-1">
-                <p className="text-xs font-bold text-slate-800 dark:text-slate-100">{user?.name || 'Student'}</p>
-                <p className="text-[11px] text-slate-400 truncate">{user?.email || 'student@mindflow.edu'}</p>
+                <p className="text-xs font-bold text-slate-800 dark:text-slate-100">
+                  {user?.anonymousMode ? 'Anonymous Student #4092' : (user?.name || 'Student')}
+                </p>
+                <p className="text-[11px] text-slate-400 truncate">
+                  {user?.anonymousMode ? 'hidden@mindflow.local' : (user?.email || 'student@mindflow.edu')}
+                </p>
                 <div className="mt-1 flex items-center gap-1.5">
                   <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" />
                   <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-medium">CSE • 2nd Year</span>
@@ -204,8 +208,8 @@ export const Topbar = ({ onMenuClick, title, subtitle }) => {
                   }`}
                 >
                   <div
-                    className={`w-3 h-3 rounded-full bg-white absolute top-0.5 transition-transform ${
-                      user?.anonymousMode ? 'right-0.5' : 'left-0.5'
+                    className={`w-3 h-3 rounded-full bg-white absolute top-0.5 left-0.5 transition-transform duration-200 ${
+                      user?.anonymousMode ? 'translate-x-4' : 'translate-x-0'
                     }`}
                   />
                 </div>

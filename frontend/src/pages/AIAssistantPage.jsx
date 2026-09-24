@@ -93,7 +93,7 @@ export const AIAssistantPage = () => {
     }
   };
 
-  const studentName = user?.anonymousMode ? 'Student' : (user?.name || 'Student');
+  const studentName = user?.anonymousMode ? 'Anonymous' : (user?.name || 'Student');
 
   const fetchHistory = async () => {
     try {
