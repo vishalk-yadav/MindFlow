@@ -348,7 +348,7 @@ DATABASE_URL="postgresql://<DB_USER>:<DB_PASSWORD>@localhost:5432/<DB_NAME>?sche
 JWT_SECRET="<YOUR_SECURE_JWT_SECRET>"
 CLIENT_URL="http://localhost:5173"
 AI_API_KEY="<YOUR_OPTIONAL_GEMINI_API_KEY>"
-AI_MODEL="gemini-2.5-flash"
+AI_MODEL="gemini-3.6-flash"
 ```
 
 > **Note**: If `AI_API_KEY` is omitted, MindFlow automatically switches to its built-in rule-based engineering wellbeing advisor.
