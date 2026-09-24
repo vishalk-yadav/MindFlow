@@ -1,0 +1,390 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Priority {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum TaskCategory {
+  ACADEMIC
+  DSA
+  CODING_PRACTICE
+  PROJECT
+  LAB
+  ASSIGNMENT
+  EXAM_PREP
+  PLACEMENT_PREP
+  INTERNSHIP
+  HACKATHON
+  OPEN_SOURCE
+  PERSONAL
+  OTHER
+}
+
+enum Role {
+  STUDENT
+  FACULTY
+  ADMIN
+}
+
+enum AlertStatus {
+  UNREVIEWED
+  REVIEWED
+  IN_PROGRESS
+  RESOLVED
+}
+
+enum AlertSeverity {
+  LOW
+  MODERATE
+  HIGH
+  CRITICAL
+}
+
+model Institution {
+  id                 String         @id @default(uuid())
+  name               String
+  code               String         @unique
+  burnoutThreshold   Int            @default(70)
+  highThreshold      Int            @default(60)
+  criticalThreshold  Int            @default(80)
+  alertCooldownDays  Int            @default(3)
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  users              User[]
+  alerts             BurnoutAlert[]
+}
+
+model User {
+  id               String            @id @default(uuid())
+  email            String            @unique
+  passwordHash     String
+  name             String
+  role             Role              @default(STUDENT)
+  anonymousMode    Boolean           @default(false)
+  institutionId    String?
+  institution      Institution?      @relation(fields: [institutionId], references: [id], onDelete: SetNull)
+  department       String?           // e.g. "Computer Science & Engineering"
+  section          String?           // e.g. "Section A"
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  profile          Profile?
+  academicProfile  AcademicProfile?
+  tasks            Task[]
+  checkIns         DailyCheckIn[]
+  burnoutScores    BurnoutScore[]
+  focusSessions    FocusSession[]
+  habits           Habit[]
+  gameSessions     GameSession[]
+  notifications    Notification[]
+  aiConversations  AIConversation[]
+  privacySetting   PrivacySetting?
+  examPreps        ExamPreparation[]
+  nudges           Nudge[]
+  achievements     UserAchievement[]
+  plannerSessions  PlannerSession[]
+
+  // Faculty & Alert relations
+  studentAlerts    BurnoutAlert[]    @relation("StudentAlerts")
+  reviewedAlerts   BurnoutAlert[]    @relation("ReviewedAlerts")
+  interventionNotes InterventionNote[]
+  auditLogs        AuditLog[]
+
+  @@index([role, institutionId])
+  @@index([department])
+}
+
+model Profile {
+  id               String            @id @default(uuid())
+  userId           String            @unique
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  college          String?
+  targetSleepHours Float             @default(7.5)
+  dailyStudyHours  Float             @default(6.0)
+  priorities       String[]          @default(["Semester academics", "DSA", "Projects"])
+  avatarUrl        String?
+}
+
+model AcademicProfile {
+  id               String            @id @default(uuid())
+  userId           String            @unique
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branch           String            @default("Computer Science & Engineering")
+  year             String            @default("2nd Year")
+  semester         Int               @default(4)
+  currentSubjects  String[]          @default(["Data Structures & Algorithms", "DBMS", "Operating Systems", "Mathematics IV"])
+  academicWorkload String            @default("MODERATE")
+}
+
+model Task {
+  id               String            @id @default(uuid())
+  userId           String
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title            String
+  description      String?
+  category         TaskCategory      @default(ACADEMIC)
+  customCategory   String?
+  priority         Priority          @default(MEDIUM)
+  completed        Boolean           @default(false)
+  completedAt      DateTime?
+  deadline         DateTime?
+  deadlineLabel    String?           // e.g. "Due today", "Due tomorrow", "Due Friday"
+  estimatedMinutes Int               @default(60)
+  actualMinutes    Int?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  focusSessions    FocusSession[]
+
+  @@index([userId, completed])
+}
+
+model DailyCheckIn {
+  id               String            @id @default(uuid())
+  userId           String
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date             DateTime          @default(now())
+  mood             String            // GREAT, GOOD, OKAY, STRESSED, EXHAUSTED
+  stressLevel      Int               // 1 to 10
+  energyLevel      Int               // 1 to 10
+  sleepHours       Float
+  studyHours       Float
+  breaksCount      Int
+  mainWorkload     TaskCategory      @default(ACADEMIC)
+  notes            String?
+  createdAt        DateTime          @default(now())
+
+  @@index([userId, date])
+}
+
+model BurnoutScore {
+  id               String            @id @default(uuid())
+  userId           String
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  score            Int               // 0 to 100
+  riskLevel        String            // LOW, MODERATE, HIGH
+  workloadFactor   Float             // percentage contribution
+  sleepFactor      Float
+  stressFactor     Float
+  breaksFactor     Float
+  explanation      String
+  positiveFactors  String[]
+  negativeFactors  String[]
+  calculatedAt     DateTime          @default(now())
+
+  @@index([userId, calculatedAt])
+}
+
+model FocusSession {
+  id               String            @id @default(uuid())
+  userId           String
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskId           String?
+  task             Task?             @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  category         TaskCategory      @default(CODING_PRACTICE)
+  mode             String            // POMODORO, DEEP_WORK, CUSTOM
+  durationMinutes  Int
+  breakMinutes     Int
+  completed        Boolean           @default(true)
+  pointsEarned     Int               @default(25)
+  startedAt        DateTime          @default(now())
+  endedAt          DateTime?
+
+  @@index([userId, startedAt])
+}
+
+model Habit {
+  id               String            @id @default(uuid())
+  userId           String
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name             String
+  targetFrequency  String            @default("DAILY")
+  category         String            @default("WELLBEING")
+  logs             HabitLog[]
+  createdAt        DateTime          @default(now())
+}
+
+model HabitLog {
+  id               String            @id @default(uuid())
+  habitId          String
+  habit            Habit             @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  date             DateTime          @default(now())
+  completed        Boolean           @default(true)
+
+  @@unique([habitId, date])
+}
+
+model GameSession {
+  id               String            @id @default(uuid())
+  userId           String
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gameType         String            // STRESS_BUBBLES, MEMORY_MATCH, BREATHING_GAME
+  durationSeconds  Int
+  score            Int?
+  postMoodFeedback String?           // BETTER, SAME, STILL_STRESSED
+  playedAt         DateTime          @default(now())
+}
+
+model Nudge {
+  id               String            @id @default(uuid())
+  userId           String
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type             String            // CODING_BREAK, DEADLINE_PRESSURE, LOW_SLEEP, HIGH_STRESS, RECOVERY
+  title            String
+  message          String
+  actionLabel      String?
+  actionLink       String?
+  dismissed        Boolean           @default(false)
+  createdAt        DateTime          @default(now())
+}
+
+model ExamPreparation {
+  id               String            @id @default(uuid())
+  userId           String
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject          String
+  examDate         DateTime
+  difficulty       String            // EASY, MEDIUM, HARD
+  topicsTotal      Int               @default(5)
+  topicsCompleted  Int               @default(2)
+  topicsList       Json              // [{name: "ER Model", completed: true}, ...]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+}
+
+model Achievement {
+  id               String            @id @default(uuid())
+  code             String            @unique
+  title            String
+  description      String
+  icon             String
+  users            UserAchievement[]
+}
+
+model UserAchievement {
+  id               String            @id @default(uuid())
+  userId           String
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievementId    String
+  achievement      Achievement       @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  unlockedAt       DateTime          @default(now())
+
+  @@unique([userId, achievementId])
+}
+
+model PlannerSession {
+  id               String            @id @default(uuid())
+  userId           String
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date             DateTime          @default(now())
+  scheduleJson     Json              // Array of time slot items
+  burnoutAdapted   Boolean           @default(false)
+  createdAt        DateTime          @default(now())
+}
+
+model AIConversation {
+  id               String            @id @default(uuid())
+  userId           String
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title            String            @default("New Conversation")
+  messages         AIMessage[]
+  createdAt        DateTime          @default(now())
+}
+
+model AIMessage {
+  id               String            @id @default(uuid())
+  conversationId   String
+  conversation     AIConversation    @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender           String            // USER or ASSISTANT
+  content          String
+  structuredData   Json?             // formatted action plan, steps, buttons
+  createdAt        DateTime          @default(now())
+}
+
+model Notification {
+  id               String            @id @default(uuid())
+  userId           String
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title            String
+  message          String
+  type             String            // DEADLINE, NUDGE, BURNOUT, ACHIEVEMENT, SYSTEM, BURNOUT_HIGH, BURNOUT_CRITICAL, RISK_INCREASE
+  studentId        String?
+  riskScore        Int?
+  read             Boolean           @default(false)
+  createdAt        DateTime          @default(now())
+
+  @@index([userId, read])
+}
+
+model PrivacySetting {
+  id               String            @id @default(uuid())
+  userId           String            @unique
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shareAnalytics   Boolean           @default(false)
+  storeAIHistory   Boolean           @default(true)
+  retentionDays    Int               @default(365)
+}
+
+model BurnoutAlert {
+  id                  String             @id @default(uuid())
+  studentId           String
+  student             User               @relation("StudentAlerts", fields: [studentId], references: [id], onDelete: Cascade)
+  institutionId       String?
+  institution         Institution?       @relation(fields: [institutionId], references: [id], onDelete: SetNull)
+  riskScore           Int
+  riskLevel           AlertSeverity      @default(HIGH)
+  threshold           Int                @default(70)
+  status              AlertStatus        @default(UNREVIEWED)
+  reason              String?
+  contributingFactors String[]           @default([])
+  detectedAt          DateTime           @default(now())
+  reviewedAt          DateTime?
+  reviewedById        String?
+  reviewedBy          User?              @relation("ReviewedAlerts", fields: [reviewedById], references: [id], onDelete: SetNull)
+  resolvedAt          DateTime?
+
+  interventionNotes   InterventionNote[]
+
+  @@index([studentId, status])
+  @@index([riskLevel])
+  @@index([detectedAt])
+  @@index([institutionId])
+}
+
+model InterventionNote {
+  id         String       @id @default(uuid())
+  alertId    String
+  alert      BurnoutAlert @relation(fields: [alertId], references: [id], onDelete: Cascade)
+  facultyId  String
+  faculty    User         @relation(fields: [facultyId], references: [id], onDelete: Cascade)
+  note       String
+  actionType String       @default("NOTE") // NOTE, CONTACTED_STUDENT, COUNSELLING_REFERRED, ACADEMIC_ADJUSTMENT, RESOLVED
+  createdAt  DateTime     @default(now())
+
+  @@index([alertId])
+  @@index([facultyId])
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action     String   // VIEW_STUDENT_PROFILE, VIEW_ALERT, ADD_NOTE, UPDATE_ALERT_STATUS, UPDATE_THRESHOLD
+  targetType String   // STUDENT, ALERT, SETTINGS
+  targetId   String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([userId, action])
+  @@index([createdAt])
+}
