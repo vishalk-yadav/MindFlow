@@ -1,4 +1,4 @@
-# MindFlow — Engineering Student Burnout Prediction & Wellbeing Platform
+#MindFlow — Engineering Student Burnout Prediction & Wellbeing Platform
 
 > **Study smarter. Code better. Recover better.**
 
